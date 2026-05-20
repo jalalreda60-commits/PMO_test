@@ -1,0 +1,46 @@
+name: Build PMO App EXE
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller PySide6
+
+          if (Test-Path "requirements.txt") {
+              pip install -r requirements.txt
+          }
+
+      - name: Build EXE (PyInstaller)
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --windowed --name "PMO_App" ^
+          --add-data "icons;icons" ^
+          --add-data "app;app" ^
+          --hidden-import=PySide6.QtCore ^
+          --hidden-import=PySide6.QtGui ^
+          --hidden-import=PySide6.QtWidgets ^
+          main.py
+
+      - name: Upload EXE artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PMO-App-EXE
+          path: dist/**
